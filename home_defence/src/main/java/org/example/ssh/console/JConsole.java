@@ -1,22 +1,32 @@
 package org.example.ssh.console;
 
+import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.JSchException;
 
-public class JConsole extends AbstractJConsole implements IJConsole {
+public class JConsole extends AbstractJConsole {
 
-
-    public JConsole(String username, String host, String password, int port, boolean withLogging) {
-        super(username, host, password, port, withLogging);
+    public JConsole(String username, String host, String passwd, int port, boolean withLogging) {
+        super(username, host, passwd, port, withLogging);
     }
 
     @Override
     public void loadSetup() throws JSchException {
-        super.loadSetup();
+            createSession();
     }
 
     @Override
-    public void reloadChannel() throws JSchException {
-        super.reloadChannel();
+    public Channel reloadChannel(String channelName) throws JSchException {
+        if(channelName.equals("shell")){
+            return getCurrentSession().openChannel("shell");
+        }else if(channelName.equals("sftp")){
+            return getCurrentSession().openChannel("sftp");
+        }
+        throw new RuntimeException(String.format("No Channel with name %s found.",channelName));
+    }
+
+    @Override
+    public void closeChannel() {
+
     }
 
     @Override
@@ -29,27 +39,22 @@ public class JConsole extends AbstractJConsole implements IJConsole {
         super.closeSessions();
     }
 
-    @Override
-    public void closeChannel() {
-        super.closeChannel();
-    }
-
-    public static JConsoleBuilder builder() {
+    public JConsoleBuilder builder() {
         return new JConsoleBuilder();
     }
 
     public static class JConsoleBuilder {
-        private int port;
-        private String host;
         private String username;
-        private String password;
-        private boolean withLogging = false;
+        private String host;
+        private String passwd;
+        private int port = 22;
+        private boolean activated = false;
 
         private JConsoleBuilder() {
         }
 
-        public JConsoleBuilder withLogging(boolean activate) {
-            this.withLogging = activate;
+        public JConsoleBuilder withUserName(String username) {
+            this.username = username;
             return this;
         }
 
@@ -58,13 +63,8 @@ public class JConsole extends AbstractJConsole implements IJConsole {
             return this;
         }
 
-        public JConsoleBuilder withUsername(String username) {
-            this.username = username;
-            return this;
-        }
-
-        public JConsoleBuilder withPassword(String password) {
-            this.password = password;
+        public JConsoleBuilder withPassword(String passwd) {
+            this.passwd = passwd;
             return this;
         }
 
@@ -73,8 +73,13 @@ public class JConsole extends AbstractJConsole implements IJConsole {
             return this;
         }
 
+        public JConsoleBuilder withLogger(boolean activated) {
+            this.activated = activated;
+            return this;
+        }
+
         public JConsole build() {
-            return new JConsole(username, host, password, port, withLogging);
+            return new JConsole(username, host, passwd, port, activated);
         }
     }
 
