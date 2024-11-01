@@ -1,86 +1,81 @@
 package org.example.ssh.console;
 
 import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.SftpException;
-import org.example.ssh.EDataTyp;
 
-import java.io.IOException;
-import java.util.List;
-
-public class JConsole extends AbstractJConsole{
-
-    public JConsole(String username, String host, String passwd, int port, boolean withLogging) {
-        super(username, host, passwd, port, withLogging);
-    }
+public class JConsole extends AbstractJConsole implements IJConsole {
 
 
-    @Override
-    public void createFileWithContent(String content, String fileName) throws SftpException, IOException {
-        super.createFileWithContent(content, fileName);
+    public JConsole(String username, String host, String password, int port, boolean withLogging) {
+        super(username, host, password, port, withLogging);
     }
 
     @Override
-    public void rename(String oldFileName, String newFileName) throws SftpException {
-        super.rename(oldFileName, newFileName);
+    public void loadSetup() throws JSchException {
+        super.loadSetup();
     }
 
     @Override
-    public void overwriteFile(String content, String fileName) throws SftpException, IOException {
-        super.overwriteFile(content, fileName);
+    public void reloadChannel() throws JSchException {
+        super.reloadChannel();
     }
 
     @Override
-    public void appendFile(String content, String fileName) throws SftpException, IOException {
-        super.appendFile(content, fileName);
+    public void reloadSession() throws JSchException {
+        super.reloadSession();
     }
 
     @Override
-    public void uploadFile(String localPath, String fileName) throws SftpException {
-        super.uploadFile(localPath, fileName);
+    public void closeSessions() {
+        super.closeSessions();
     }
 
     @Override
-    public void uploadFile(String localPath, String fileName, String remotePath) throws SftpException {
-        super.uploadFile(localPath, fileName, remotePath);
+    public void closeChannel() {
+        super.closeChannel();
     }
 
-    @Override
-    public String readFileContent(String fileName) throws SftpException, IOException {
-        return super.readFileContent(fileName);
+    public static JConsoleBuilder builder() {
+        return new JConsoleBuilder();
     }
 
-    @Override
-    public String sendCommand(String command) throws JSchException, IOException {
-        return super.sendCommand(command);
+    public static class JConsoleBuilder {
+        private int port;
+        private String host;
+        private String username;
+        private String password;
+        private boolean withLogging = false;
+
+        private JConsoleBuilder() {
+        }
+
+        public JConsoleBuilder withLogging(boolean activate) {
+            this.withLogging = activate;
+            return this;
+        }
+
+        public JConsoleBuilder withHost(String host) {
+            this.host = host;
+            return this;
+        }
+
+        public JConsoleBuilder withUsername(String username) {
+            this.username = username;
+            return this;
+        }
+
+        public JConsoleBuilder withPassword(String password) {
+            this.password = password;
+            return this;
+        }
+
+        public JConsoleBuilder withPort(int port) {
+            this.port = port;
+            return this;
+        }
+
+        public JConsole build() {
+            return new JConsole(username, host, password, port, withLogging);
+        }
     }
 
-    @Override
-    public void resetSession() throws JSchException {
-        super.resetSession();
-    }
-
-    @Override
-    public void resetChannel() throws JSchException {
-        super.resetChannel();
-    }
-
-    @Override
-    public void reset() throws JSchException {
-        super.reset();
-    }
-
-    @Override
-    public List<String> getFolders() throws SftpException {
-        return super.getFolders();
-    }
-
-    @Override
-    public List<String> getFiles() throws SftpException {
-        return super.getFiles();
-    }
-
-    @Override
-    public List<String> getFilesByDataTyp(EDataTyp dataTyp) throws SftpException {
-        return super.getFilesByDataTyp(dataTyp);
-    }
 }

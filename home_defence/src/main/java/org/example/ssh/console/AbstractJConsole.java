@@ -7,7 +7,9 @@ import org.example.ssh.logger.JConsoleLogger;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.Vector;
+import java.util.concurrent.*;
 
 import static com.jcraft.jsch.ChannelSftp.APPEND;
 import static com.jcraft.jsch.ChannelSftp.OVERWRITE;
@@ -16,6 +18,7 @@ import static org.example.ssh.EDataTyp.TXT;
 public abstract class AbstractJConsole extends JSch implements IJConsole {
 
     private ChannelSftp sftpChannel;
+    private ChannelShell shellChannel;
     private String username;
     private String host;
     private String passwd;
@@ -32,13 +35,17 @@ public abstract class AbstractJConsole extends JSch implements IJConsole {
         }
     }
 
-    @Override
+
+    public Session getCurrentSession() {
+        return session;
+    }
+
     public void loadSetup() throws JSchException {
         createSession();
         createChannels();
     }
 
-    @Override
+
     public final void createSession() throws JSchException {
         session = getSession(username, host, 22);
         session.setPassword(passwd);
@@ -46,39 +53,100 @@ public abstract class AbstractJConsole extends JSch implements IJConsole {
         session.connect();
     }
 
-    @Override
+
     public final void createChannels() throws JSchException {
         sftpChannel = (ChannelSftp) session.openChannel("sftp");
         sftpChannel.connect();
+
+        shellChannel = (ChannelShell) session.openChannel("shell");
+        shellChannel.connect();
     }
 
-    @Override
+
     public final String cd(String path) throws SftpException {
         sftpChannel.cd(String.format("%s/%s", pwd(), path));
         return sftpChannel.pwd();
     }
 
-    @Override
+
     public final String pwd() throws SftpException {
         return sftpChannel.pwd();
     }
 
-    @Override
+
     public final void mkdir(String path) throws SftpException {
         sftpChannel.mkdir(path);
     }
 
-    @Override
+
     public final void rmdir(String folder) throws SftpException {
         sftpChannel.rmdir(folder);
     }
 
-    @Override
+
     public final boolean existDir(String folder) throws JSchException, SftpException {
         return getFolders().stream().filter(folderName -> folderName.equals(folder)).toList().size() == 1;
     }
 
-    @Override
+    public String executeCommand(int timeOutMillis, Scanner scanner) throws InterruptedException {
+        StringBuilder sb = new StringBuilder();
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+
+        try {
+            while (true) {
+                Future<String> lineFuture = executor.submit(scanner::nextLine);
+                try {
+                    String line = lineFuture.get(timeOutMillis, TimeUnit.MILLISECONDS);
+                    sb.append(line).append("\n");
+                } catch (TimeoutException e) {
+                    System.err.println("Timeout: Keine weitere Eingabe innerhalb der Zeitgrenze.");
+                    break;
+                } catch (ExecutionException | InterruptedException e) {
+                    e.printStackTrace();
+                    break;
+                }
+            }
+        } finally {
+            executor.shutdown();
+        }
+
+        return sb.toString();
+    }
+
+    public String executeCommand(String command, boolean timeoutActivated) throws IOException, InterruptedException {
+        InputStream in = shellChannel.getInputStream();
+        OutputStream out = shellChannel.getOutputStream();
+        PrintWriter writer = new PrintWriter(out, true);
+        writer.println(command);
+        writer.flush();
+        Scanner scanner = new Scanner(in);
+        if (timeoutActivated) {
+            return executeCommand(1000, scanner);
+        }
+
+        StringBuilder sb = new StringBuilder();
+        while (scanner.hasNextLine()) {
+            sb.append(String.format("%s \n", scanner.nextLine()));
+        }
+        return sb.toString();
+    }
+
+    public String executeCommands(List<String> commands, boolean timeoutActivated) {
+        StringBuilder sb = new StringBuilder();
+        commands.forEach(command -> {
+            try {
+                sb.append(String.format("Next Command \n %s", executeCommand(command, timeoutActivated)));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        return sb.toString();
+    }
+
+
     public void createFileWithContent(String content, String fileName) throws SftpException, IOException {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         byteArrayOutputStream.write(content.getBytes());
@@ -87,7 +155,7 @@ public abstract class AbstractJConsole extends JSch implements IJConsole {
         inputStream.close();
     }
 
-    @Override
+
     public void rename(String oldFileName, String newFileName) throws SftpException {
         sftpChannel.rename(
                 String.format("%s/%s", oldFileName),
@@ -95,7 +163,7 @@ public abstract class AbstractJConsole extends JSch implements IJConsole {
         );
     }
 
-    @Override
+
     public void overwriteFile(String content, String fileName) throws SftpException, IOException {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         byteArrayOutputStream.write(content.getBytes());
@@ -103,7 +171,7 @@ public abstract class AbstractJConsole extends JSch implements IJConsole {
         sftpChannel.put(inputStream, fileName, OVERWRITE);
     }
 
-    @Override
+
     public void appendFile(String content, String fileName) throws SftpException, IOException {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         byteArrayOutputStream.write(content.getBytes());
@@ -111,17 +179,17 @@ public abstract class AbstractJConsole extends JSch implements IJConsole {
         sftpChannel.put(inputStream, fileName, APPEND);
     }
 
-    @Override
+
     public void uploadFile(String localPath, String fileName) throws SftpException {
         sftpChannel.put(localPath, fileName);
     }
 
-    @Override
+
     public void uploadFile(String localPath, String fileName, String remotePath) throws SftpException {
         uploadFile(localPath, String.format("%s/%s", remotePath, fileName));
     }
 
-    @Override
+
     public String readFileContent(String fileName) throws SftpException, IOException {
         StringBuilder content = new StringBuilder();
         InputStream inputStream = sftpChannel.get(String.format("%s/%s", pwd(), fileName));
@@ -133,28 +201,28 @@ public abstract class AbstractJConsole extends JSch implements IJConsole {
         return content.toString();
     }
 
-    @Override
+
     public String sendCommand(String command) throws JSchException, IOException {
         return "";
     }
 
-    @Override
+
     public void resetSession() throws JSchException {
         createSession();
     }
 
-    @Override
+
     public void resetChannel() throws JSchException {
         createChannels();
     }
 
-    @Override
+
     public void reset() throws JSchException {
         resetSession();
         resetChannel();
     }
 
-    @Override
+
     public List<String> getFolders() throws SftpException {
         List<String> folders = new ArrayList<>();
         Vector<ChannelSftp.LsEntry> files = sftpChannel.ls(".");
@@ -166,7 +234,7 @@ public abstract class AbstractJConsole extends JSch implements IJConsole {
         return folders;
     }
 
-    @Override
+
     public List<String> getFiles() throws SftpException {
         List<String> folders = new ArrayList<>();
         Vector<ChannelSftp.LsEntry> files = sftpChannel.ls(".");
@@ -174,7 +242,7 @@ public abstract class AbstractJConsole extends JSch implements IJConsole {
         return folders.stream().filter(folder -> !(folder.equals(".") || folder.equals(".."))).toList();
     }
 
-    @Override
+
     public List<String> getFilesByDataTyp(EDataTyp dataTyp) throws SftpException {
         List<String> folders = new ArrayList<>();
         Vector<ChannelSftp.LsEntry> files = sftpChannel.ls(".");
@@ -183,8 +251,30 @@ public abstract class AbstractJConsole extends JSch implements IJConsole {
         if (dataTyp.equals(TXT)) {
             typ = ".txt";
         } else {
-           throw new RuntimeException(String.format("No Data Typ find by parameter: "+dataTyp));
+            throw new RuntimeException(String.format("No Data Typ find by parameter: " + dataTyp));
         }
         return folders.stream().filter(folder -> folder.contains(typ)).toList();
+    }
+
+    @Override
+    public void reloadChannel() throws JSchException {
+        sftpChannel.disconnect();
+        createChannels();
+    }
+
+    @Override
+    public void reloadSession() throws JSchException {
+        session.disconnect();
+        createSession();
+    }
+
+    @Override
+    public void closeSessions() {
+        session.disconnect();
+    }
+
+    @Override
+    public void closeChannel() {
+        sftpChannel.disconnect();
     }
 }
