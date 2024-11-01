@@ -1,6 +1,6 @@
 package org.example.ssh;
 
-public enum EData {
+public enum EDataTyp {
 
     TXT
 

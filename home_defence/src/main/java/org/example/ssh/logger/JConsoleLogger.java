@@ -1,4 +1,4 @@
-package org.example.ssh;
+package org.example.ssh.logger;
 
 public class JConsoleLogger  implements com.jcraft.jsch.Logger {
     static java.util.Hashtable<Integer, String> name = new java.util.Hashtable<>();

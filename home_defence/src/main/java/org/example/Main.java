@@ -1,11 +1,10 @@
 package org.example;
 
-import com.jcraft.jsch.*;
-import org.example.ssh.JConsole;
+import org.example.ssh.console.JConsole;
 
-import java.io.IOException;
 
 public class Main {
+
     public static void main(String[] args) throws Exception {
 
         JConsole console = JConsole.builder()
@@ -21,9 +20,10 @@ public class Main {
             console.mkdir("test");
         }
         console.cd("test");
+        System.err.println(console.readFileContent("test.txt"));
        // console.createFileWithContent(console.getCurrentPath()+"/hello.txt","Hello World");
-        console.createFileWithContent("asd","a.txt");
-        System.err.println("<-------------Load----------------->");
-        console.getFolderFromPath().forEach(x-> System.err.println(x));
+        //console.createFileWithContent("asd","a.txt");
+        //System.err.println("<-------------Load----------------->");
+       // console.getFolderFromPath().forEach(x-> System.err.println(x));
     }
 }
