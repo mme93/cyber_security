@@ -1,4 +1,4 @@
-package org.example.ssh.console.channel.shell;
+package org.example.ssh.session.channel.shell;
 
 import com.jcraft.jsch.Session;
 

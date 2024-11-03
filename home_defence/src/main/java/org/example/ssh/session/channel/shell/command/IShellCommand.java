@@ -1,4 +1,4 @@
-package org.example.ssh.console.channel.shell.command;
+package org.example.ssh.session.channel.shell.command;
 
 public interface IShellCommand {
 
