@@ -1,4 +1,4 @@
-package org.example.ssh.session.channel.sftp;
+package org.example.defender.ssh.session.channel.sftp;
 
 import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.JSchException;

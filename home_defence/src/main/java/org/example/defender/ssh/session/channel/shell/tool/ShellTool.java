@@ -1,6 +1,6 @@
-package org.example.ssh.session.channel.shell.tool;
+package org.example.defender.ssh.session.channel.shell.tool;
 
-import org.example.ssh.session.channel.shell.IShell;
+import org.example.defender.ssh.session.channel.shell.IShell;
 
 public class ShellTool implements IShellTool{
 

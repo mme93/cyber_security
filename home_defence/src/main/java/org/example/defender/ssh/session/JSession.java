@@ -1,9 +1,9 @@
-package org.example.ssh.session;
+package org.example.defender.ssh.session;
 
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-import org.example.ssh.logger.JConsoleLogger;
+import org.example.defender.ssh.logger.JConsoleLogger;
 
 public class JSession extends JSch {
 

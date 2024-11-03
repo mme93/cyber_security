@@ -1,4 +1,4 @@
-package org.example.ssh;
+package org.example.defender.ssh;
 
 public enum EDataTyp {
 
